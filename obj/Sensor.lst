@@ -1,0 +1,319 @@
+C251 COMPILER V5.60.0,  Sensor                                                             13/06/23  16:02:14  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE Sensor
+OBJECT MODULE PLACED IN .\obj\Sensor.obj
+COMPILER INVOKED BY: D:\KeilMDK\C251\BIN\C251.EXE Hardware\Sensor\Sensor.c XSMALL INTR2 OPTIMIZE(0,SPEED) BROWSE INCDIR(
+                    -.\User;.\Hardware\ADC;.\Hardware\CalcCPS;.\Hardware\CalcDoseRate;.\Hardware\Cmd;.\Hardware\DisPlay;.\Hardware\Flash;.\Ha
+                    -rdware\IIC;.\Hardware\Mcp4725;.\Hardware\Sensor;.\Hardware\SPI;.\Hardware\System;.\Hardware\Uart;.\User) PRINT(.\obj\Sen
+                    -sor.lst) OBJECT(.\obj\Sensor.obj) 
+
+stmt  level    source
+
+    1          #include "Sensor.h"
+    2          #include "CalcDoseRate.h"
+    3          
+    4          
+    5          extern LP_SYSTEM_STTAE SysRunState;
+    6          
+    7          extern unsigned long Get_HV_Vol();
+    8          
+    9          #ifdef POE_SEN
+               #define USE_MID_FIX  80         // ·Ö¶ÎÄâºÏ
+               #define USE_LOW_USV 800             //1mSv
+               #define USE_HIGH_USV 1200               //1.2mSv
+               #else
+   14          #define USE_LOW_USV   1000              //1mSv
+   15          #define USE_HIGH_USV 2000               //2mSv
+   16          #endif
+   17          
+   18          extern LP_SYSTEM_STTAE SysRunState;
+   19          extern u32 GetCounter(void);
+   20          
+   21          u8 CPSFlag = 0;
+   22          
+   23          static float LowSmothCPS;
+   24          static float LowNOSmothCPS;
+   25          static float LowSumCPS;
+   26          
+   27          float parama,paramb,paramc,paramd;
+   28          
+   29          void SensorInit(void)
+   30          {
+   31   1              InitArr();
+   32   1              
+   33   1              parama = SysRunState.stParam.s_Jiaozhun.DI_A;                   //0.63;
+   34   1              paramb = SysRunState.stParam.s_Jiaozhun.DI_B;                   //0.00019;
+   35   1              paramc = SysRunState.stParam.s_Jiaozhun.DI_C;                   //SysRunState.stParam.s_SysParam.Canshu1
+             -;
+   36   1              //memset((void*)&SysRunState.s_DoseMSG,0,sizeof(STU_DOSERATE));
+   37   1              SysRunState.s_DoseMSG.DoseRate = 0;
+   38   1              SysRunState.s_DoseMSG.State = 0;
+   39   1              
+   40   1              SysRunState.SensorType = LOW;           //GetSensorType();
+   41   1              RefreshParam();
+   42   1              
+   43   1              SensorMeasureBegin();                   //¿ªÊ¼²âÁ¿ 
+   44   1      }
+   45          
+   46          void RefreshParam(void)
+   47          {
+   48   1              parama = SysRunState.stParam.s_Jiaozhun.DI_A;       //0.63;
+   49   1              paramb = SysRunState.stParam.s_Jiaozhun.DI_B;       //0.00019;
+   50   1              paramc = SysRunState.stParam.s_Jiaozhun.DI_C;
+   51   1              #ifdef POE_SEN
+                   paramd = SysRunState.stParam.s_Jiaozhun.DI_D;
+                   #endif
+   54   1      }
+   55          
+C251 COMPILER V5.60.0,  Sensor                                                             13/06/23  16:02:14  PAGE 2   
+
+   56          void SensorMeasureBegin(void)
+   57          { 
+   58   1              GetCounter();
+   59   1      }
+   60          
+   61          u8 GetSensorType(void)
+   62          {
+   63   1              u8 temp = (P7 >> 5)&0x03;
+   64   1              if(temp == 0)
+   65   1              {
+   66   2                      return LOW;
+   67   2              }
+   68   1      //      else if(temp == 3)
+   69   1      //      {
+   70   1      //              return HIGH;
+   71   1      //      }
+   72   1      //      else if(temp == 3)
+   73   1      //      {
+   74   1      //              return WHOLE;
+   75   1      //      }
+   76   1              return LOW;
+   77   1      }
+   78          
+   79          #ifdef POE_SEN
+               void UseLowParam(float dr)
+               {
+                   if (dr< 80)
+                   {
+                       parama = SysRunState.stParam.s_Jiaozhun.DI_A;
+                               paramb = SysRunState.stParam.s_Jiaozhun.DI_B;
+                               paramc = SysRunState.stParam.s_Jiaozhun.DI_C;
+                       paramd = SysRunState.stParam.s_Jiaozhun.DI_D;
+                   }
+               //    else
+               //    {
+               //        parama = SysRunState.stParam.s_Jiaozhun.MID_A;
+               //              paramb = SysRunState.stParam.s_Jiaozhun.MID_B;
+               //              paramc = SysRunState.stParam.s_Jiaozhun.MID_C;
+               //        paramd = SysRunState.stParam.s_Jiaozhun.MID_D;
+               //    }
+               }
+               #endif
+   98          
+   99          //========================================================================
+  100          // º¯ÊýÃû³Æ: void CaptureSensorPluseCounter(void)
+  101          // º¯Êý¹¦ÄÜ: ²¶»ñ´«¸ÐÆ÷µÄÂö³å¼ÆÊý
+  102          // Èë¿Ú²ÎÊý: @ÎÞ
+  103          // º¯Êý·µ»Ø: ÎÞ
+  104          // µ±Ç°°æ±¾: VER1.0
+  105          // ÐÞ¸ÄÈÕÆÚ: 2023.5.5
+  106          // µ±Ç°×÷Õß:
+  107          // ÆäËû±¸×¢: 
+  108          //========================================================================
+  109          void CaptureSensorPluseCounter(void)
+  110          {
+  111   1              float uSvh;
+  112   1          float nSmothCPS;
+  113   1              LowSumCPS = GetCounter();
+  114   1              if(LowSumCPS == 0)
+  115   1              {
+  116   2                      SysRunState.LChannelNoCountTime++;
+  117   2              }
+  118   1              else
+  119   1              {
+  120   2                      SysRunState.LChannelNoCountTime = 0;
+  121   2              }
+C251 COMPILER V5.60.0,  Sensor                                                             13/06/23  16:02:14  PAGE 3   
+
+  122   1          
+  123   1              SysRunState.s_CPS.CPS1 = LowSumCPS;
+  124   1              SysRunState.s_CPS.CPS2 = 0;             //LowSumCPS;
+  125   1              nSmothCPS = SmothCpsCalcRate(LowSumCPS, SysRunState.s_DoseMSG.DoseRate, &uSvh);
+  126   1          
+  127   1            
+  128   1      //      if(uSvh > USE_HIGH_USV)//&&(SysRunState.RealRange == 'L')&&(SysRunState.range =='A'))
+  129   1      //      {
+  130   1      //              parama = SysRunState.stParam.s_Jiaozhun.GAO_A;
+  131   1      //              paramb = SysRunState.stParam.s_Jiaozhun.GAO_B;
+  132   1      //              paramc = SysRunState.stParam.s_Jiaozhun.GAO_C;
+  133   1      //        #ifdef POE_SEN
+  134   1      //        paramd = SysRunState.stParam.s_Jiaozhun.GAO_D;
+  135   1      //        #endif
+  136   1      //        ClearCounter();
+  137   1      //      }
+  138   1      //      if(uSvh < USE_LOW_USV)//&&(SysRunState.RealRange == 'H')&&(SysRunState.range =='A'))
+  139   1      //      {
+  140   1      //              parama = SysRunState.stParam.s_Jiaozhun.DI_A;
+  141   1      //              paramb = SysRunState.stParam.s_Jiaozhun.DI_B;
+  142   1      //              paramc = SysRunState.stParam.s_Jiaozhun.DI_C;
+  143   1      //        #ifdef POE_SEN
+  144   1      //        UseLowParam(uSvh);
+  145   1      //        #endif
+  146   1      //        ClearCounter();
+  147   1      //      }
+  148   1          parama = SysRunState.stParam.s_Jiaozhun.DI_A;
+  149   1              paramb = SysRunState.stParam.s_Jiaozhun.DI_B;
+  150   1              paramc = SysRunState.stParam.s_Jiaozhun.DI_C;
+  151   1          #ifdef POE_SEN
+                   UseLowParam(uSvh);
+                   #endif
+  154   1          ClearCounter();
+  155   1      
+  156   1      
+  157   1          #ifdef POE_SEN   
+                   UseLowParam(uSvh);
+                   SysRunState.s_DoseMSG.DoseRate *= SysRunState.stParam.s_SysParam.Canshu1;
+                   //SysRunState.s_DoseMSG.DoseRate *= SysRunState.stParam.s_SysParam.Canshu2;
+                   #else
+  162   1              SysRunState.s_DoseMSG.DoseRate  = uSvh; 
+  163   1          #endif
+  164   1      
+  165   1              CalcAlarmState(&SysRunState);
+  166   1      
+  167   1              SysRunState.s_DoseMSG.Dose += SysRunState.s_DoseMSG.DoseRate/3600.0f;
+  168   1      }
+  169          
+  170          float Get_Low_Counter(void)
+  171          {
+  172   1              return LowNOSmothCPS;
+  173   1      }
+  174          
+  175          float Get_Low_Smooth_Counter(void)
+  176          {
+  177   1              return LowSmothCPS;
+  178   1      }
+  179          
+  180          //========================================================================
+  181          // º¯ÊýÃû³Æ: u16 CalcAlarmState(LP_SYSTEM_STTAE *me)
+  182          // º¯Êý¹¦ÄÜ: ¼à²â±¨¾¯×´Ì¬
+  183          // Èë¿Ú²ÎÊý: @*me£ºÊý¾Ý
+  184          // º¯Êý·µ»Ø: ±¨¾¯×´Ì¬
+  185          // µ±Ç°°æ±¾: VER1.0
+  186          // ÐÞ¸ÄÈÕÆÚ: 2023.5.5
+  187          // µ±Ç°×÷Õß:
+C251 COMPILER V5.60.0,  Sensor                                                             13/06/23  16:02:14  PAGE 4   
+
+  188          // ÆäËû±¸×¢: 
+  189          //========================================================================
+  190          u16 CalcAlarmState(LP_SYSTEM_STTAE *me)
+  191          {
+  192   1          #if 1
+  193   1          /* ¼ÁÁ¿µ±Á¿±¨¾¯¼ì²é */      
+  194   1              if ((me->s_DoseMSG.Dose >= me->stParam.s_Alarm.DoseAlarm)
+  195   1              &&(me->stParam.s_Alarm.DoseAlarm > 0)) 
+  196   1              { 
+  197   2                      me->s_DoseMSG.State |= DOSE_ALARM_BIT;
+  198   2          } 
+  199   1              else
+  200   1              {
+  201   2                      me->s_DoseMSG.State &= ~DOSE_ALARM_BIT;
+  202   2              }
+  203   1          
+  204   1              /* ¼ÁÁ¿µ±Á¿Ô¤¾¯¼ì²é */  
+  205   1              if( (me->s_DoseMSG.Dose >= me->stParam.s_Alarm.DosePreAlarm)
+  206   1              &&(me->stParam.s_Alarm.DosePreAlarm > 0)
+  207   1              &&(me->s_DoseMSG.Dose < me->stParam.s_Alarm.DoseAlarm) ) 
+  208   1              { 
+  209   2                      me->s_DoseMSG.State |= DOSE_PRE_ALARM_BIT;
+  210   2          } 
+  211   1              else
+  212   1              {
+  213   2                      me->s_DoseMSG.State &= ~DOSE_PRE_ALARM_BIT;
+  214   2              }
+  215   1          #endif      
+  216   1          
+  217   1              /* ¼ÁÁ¿µ±Á¿ÂÊ±¨¾¯¼ì²é */        
+  218   1              if ( (me->s_DoseMSG.DoseRate >= me->stParam.s_Alarm.DoseRateAlarm)
+  219   1              &&(me->stParam.s_Alarm.DoseRateAlarm > 0) ) 
+  220   1              { 
+  221   2                      if((++me->DoseRateAlarmCnt) >= MIB_CST_DOSERATE_THRESHOLD_ALARM) 
+  222   2              {   
+  223   3                  //Á¬ÐøÁ½´Î±¨¾¯ÔòÈÏÎª±¨¾¯
+  224   3                              me->s_DoseMSG.State |= DOSERATE_ALARM_BIT;
+  225   3                      }
+  226   2          } 
+  227   1          else 
+  228   1          {
+  229   2                      me->DoseRateAlarmCnt= 0x0;
+  230   2                      me->s_DoseMSG.State &= ~DOSERATE_ALARM_BIT;
+  231   2              }
+  232   1              
+  233   1              /* ¼ÁÁ¿µ±Á¿ÂÊÔ¤¾¯¼ì²é */        
+  234   1              if ( (me->s_DoseMSG.DoseRate >= me->stParam.s_Alarm.DoseRatePreAlarm)
+  235   1              &&(me->s_DoseMSG.DoseRate < me->stParam.s_Alarm.DoseRateAlarm) )
+  236   1              { 
+  237   2                      if((++me->DoseRatePreAlarmCnt) >= MIB_CST_DOSERATE_THRESHOLD_WARNING) 
+  238   2              {
+  239   3                  //Á¬ÐøÁ½´Î±¨¾¯ÔòÈÏÎª±¨¾¯
+  240   3                              me->s_DoseMSG.State |= DOSERATE_PRE_ALARM_BIT;
+  241   3                      }
+  242   2          } 
+  243   1          else 
+  244   1          {
+  245   2                      me->DoseRatePreAlarmCnt= 0x0;
+  246   2                      me->s_DoseMSG.State &= ~DOSERATE_PRE_ALARM_BIT;
+  247   2              }
+  248   1      
+  249   1              
+  250   1              if ((me->s_DoseMSG.Dose >= 10.0*1000*1000)||(me->s_DoseMSG.DoseRate >= 10.0*1000*1000))
+  251   1              {
+  252   2                      me->s_DoseMSG.State |= OVER_RANGE_BIT;
+  253   2                      me->s_DoseMSG.DoseRate = 10.0*1000*1000;
+C251 COMPILER V5.60.0,  Sensor                                                             13/06/23  16:02:14  PAGE 5   
+
+  254   2              }
+  255   1              else
+  256   1              {
+  257   2                      me->s_DoseMSG.State &= ~OVER_RANGE_BIT;
+  258   2              }
+  259   1      //      if((SysRunState.LChannelNoCountTime > 60)||(SysRunState.LChannelNoCountTime > 600))//1·ÖÖÓÎÞÊý¾Ý,Ì½²âÆ
+             -÷Òì³£
+  260   1      //      {
+  261   1      //              me->s_DoseMSG.State |= LOW_BACK_BIT;
+  262   1      //      }
+  263   1              //else
+  264   1              //{
+  265   1                      //me->s_DoseMSG.State &= ~LOW_BACK_BIT;
+  266   1              //}
+  267   1              if(me->s_CPS.State != me->s_DoseMSG.State)//±¨¾¯ÐÅÏ¢·¢Éú±ä»¯Ôò£¬ÖØÆô·äÃùÆ÷±¨¾¯
+  268   1              {
+  269   2                      SysRunState.keyValue = 0;
+  270   2              }
+  271   1              me->s_CPS.State = me->s_DoseMSG.State;
+  272   1              return true;
+  273   1      }
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =       952     ------
+  ecode size           =    ------     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =    ------     ------
+  xdata-const size     =    ------     ------
+  edata size           =        42     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =         5     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

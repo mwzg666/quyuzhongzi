@@ -1,0 +1,289 @@
+C251 COMPILER V5.60.0,  main                                                               13/06/23  16:02:14  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE main
+OBJECT MODULE PLACED IN .\obj\main.obj
+COMPILER INVOKED BY: D:\KeilMDK\C251\BIN\C251.EXE User\main.c XSMALL INTR2 OPTIMIZE(0,SPEED) BROWSE INCDIR(.\User;.\Hard
+                    -ware\ADC;.\Hardware\CalcCPS;.\Hardware\CalcDoseRate;.\Hardware\Cmd;.\Hardware\DisPlay;.\Hardware\Flash;.\Hardware\IIC;.\
+                    -Hardware\Mcp4725;.\Hardware\Sensor;.\Hardware\SPI;.\Hardware\System;.\Hardware\Uart;.\User) PRINT(.\obj\main.lst) OBJECT
+                    -(.\obj\main.obj) 
+
+stmt  level    source
+
+    1          #include "Sensor.h"
+    2          #include "mcp4725.h"
+    3          #include "system.h"
+    4          #include "main.h"
+    5          #include "CMD.h"
+    6          #include "uart.h"
+    7          #include "i2c.h"
+    8          #include "flash.h"
+    9          #include "CalcDoseRate.h"
+   10          
+   11          LP_SYSTEM_STTAE SysRunState={0};
+   12          
+   13          //========================================================================
+   14          // 函数名称: void InitParam()
+   15          // 函数功能: 初始化各个参数
+   16          // 入口参数: @无
+   17          // 函数返回: 无
+   18          // 当前版本: VER1.0
+   19          // 修改日期: 2023.5.5
+   20          // 当前作者:
+   21          // 其他备注: 
+   22          //========================================================================
+   23          void InitParam()
+   24          {
+   25   1              memset((void*)&SysRunState.stParam,0,sizeof(LP_PARAM));
+   26   1          SysRunState.stParam.Sign     = 0x4142;
+   27   1              SysRunState.stParam.address = 1;                         //探头地址
+   28   1              
+   29   1              SysRunState.stParam.s_Alarm.DosePreAlarm      = 300;     //300uSv
+   30   1              SysRunState.stParam.s_Alarm.DoseAlarm         = 400;     //400uSv
+   31   1              SysRunState.stParam.s_Alarm.DoseRatePreAlarm = 300;      //300uSv/h
+   32   1              SysRunState.stParam.s_Alarm.DoseRateAlarm     = 400;     //400uSv/h
+   33   1          SysRunState.stParam.s_Alarm.InvalidAlarm1     = 0;      
+   34   1              SysRunState.stParam.s_Alarm.InvalidAlarm2     = 0; 
+   35   1          
+   36   1              SysRunState.stParam.s_SysParam.Canshu1 = 1;
+   37   1              SysRunState.stParam.s_SysParam.Canshu2 = 1;
+   38   1      
+   39   1          #ifdef POE_SEN
+                   // 低量程用Co60拟合，最后剂量率要乘Co/Cs比
+                   SysRunState.stParam.s_Jiaozhun.DI_A = -0.119135107108512;    
+                       SysRunState.stParam.s_Jiaozhun.DI_B = 0.406688356856999; 
+                       SysRunState.stParam.s_Jiaozhun.DI_C = -0.000795882360575705;
+                   SysRunState.stParam.s_Jiaozhun.DI_D = 8.30493670182536E-06;
+               
+                   SysRunState.stParam.s_Jiaozhun.MID_A = 25.2437957332788;    
+                       SysRunState.stParam.s_Jiaozhun.MID_B = 0.352560222117065; 
+                       SysRunState.stParam.s_Jiaozhun.MID_C = 6.84378068779986E-05;
+                   SysRunState.stParam.s_Jiaozhun.MID_D = 0;
+                   
+                   // Cs137 > 1.2m
+                       SysRunState.stParam.s_Jiaozhun.GAO_A = -32435.201473664; 
+                       SysRunState.stParam.s_Jiaozhun.GAO_B = 35.1613941353375; 
+                       SysRunState.stParam.s_Jiaozhun.GAO_C = -6.81597532235814E-4;  
+                   SysRunState.stParam.s_Jiaozhun.GAO_D = 2.46287003496529E-08;
+                   #else
+C251 COMPILER V5.60.0,  main                                                               13/06/23  16:02:14  PAGE 2   
+
+   57   1              SysRunState.stParam.s_Jiaozhun.DI_A = 0.5593;                // 0.56;
+   58   1              SysRunState.stParam.s_Jiaozhun.DI_B = 0.000119;              // 0.00017;
+   59   1              SysRunState.stParam.s_Jiaozhun.DI_C = SysRunState.stParam.s_SysParam.Canshu1;
+   60   1              SysRunState.stParam.s_Jiaozhun.GAO_A = 0;                    // 31.92;
+   61   1              SysRunState.stParam.s_Jiaozhun.GAO_B = 0;                    // 0.000018;
+   62   1              SysRunState.stParam.s_Jiaozhun.GAO_C = SysRunState.stParam.s_SysParam.Canshu2;
+   63   1          SysRunState.stParam.s_Jiaozhun.SUPER_GAO_A = 0;
+   64   1          SysRunState.stParam.s_Jiaozhun.SUPER_GAO_B = 0;
+   65   1          SysRunState.stParam.s_Jiaozhun.SUPER_GAO_C = 0;
+   66   1      //    SysRunState.stParam.s_Jiaozhun.DET_THR_1 = 0;
+   67   1      //    SysRunState.stParam.s_Jiaozhun.DET_THR_2 = 0;
+   68   1      //    SysRunState.stParam.s_Jiaozhun.DET_THR_3 = 0;
+   69   1      //    SysRunState.stParam.s_Jiaozhun.DET_TIME = 0;
+   70   1      //    SysRunState.stParam.s_Jiaozhun.HV_THR = 0;
+   71   1          #endif
+   72   1          
+   73   1              sprintf((char*)SysRunState.stParam.s_SysParam.yuzhi1,"150");
+   74   1      
+   75   1          SysRunState.stParam.CoCsRate = 1.19;
+   76   1          
+   77   1          WritePara();                    //保存参数
+   78   1      }
+   79          
+   80          //========================================================================
+   81          // 函数名称: void delay_ms(WORD ms)  
+   82          // 函数功能: 毫秒延时函数
+   83          // 入口参数: @WORD ms：延时多少毫秒
+   84          // 函数返回: 无
+   85          // 当前版本: VER1.0
+   86          // 修改日期: 2023.5.5
+   87          // 当前作者:
+   88          // 其他备注: 
+   89          //========================================================================
+   90          void delay_ms(WORD ms)              
+   91          {
+   92   1          WORD t = 1000;
+   93   1          while(ms--)
+   94   1          {
+   95   2              for (t=0;t<1000;t++) ;
+   96   2          }
+   97   1      }
+   98          
+   99          
+  100          void delay_us(BYTE us)
+  101          {
+  102   1          while(us--)
+  103   1          {
+  104   2              ;
+  105   2          }
+  106   1      }
+  107          
+  108          //========================================================================
+  109          // 函数名称: void IoInit()
+  110          // 函数功能: 单片机I/O口初始化
+  111          // 入口参数: @无
+  112          // 函数返回: 无
+  113          // 当前版本: VER1.0
+  114          // 修改日期: 2023.5.5
+  115          // 当前作者:
+  116          // 其他备注: 
+  117          //========================================================================
+  118          void IoInit()
+  119          {
+  120   1          EAXFR = 1;
+  121   1          WTST = 0;                       //设置程序指令延时参数，赋值为0可将CPU执行指令的速度设置为最快
+  122   1      
+C251 COMPILER V5.60.0,  main                                                               13/06/23  16:02:14  PAGE 3   
+
+  123   1          P0M1 = 0x10;   P0M0 = 0x00;     //设置为准双向口
+  124   1          P1M1 = 0x00;   P1M0 = 0x00;     //设置为准双向口
+  125   1          P2M1 = 0x00;   P2M0 = 0x00;     //设置为准双向口
+  126   1          P3M1 = 0x00;   P3M0 |= (1<<3) ;     //P3.3设置为推挽输出
+  127   1          P4M1 = 0x00;   P4M0 = 0x00;     //设置为准双向口
+  128   1          P5M1 = 0x00;   P5M0 = 0x00;     //设置为准双向口
+  129   1          P6M1 = 0x00;   P6M0 = 0x00;     //设置为准双向口
+  130   1          P7M1 = 0x00;   P7M0 = 0x00;     //设置为准双向口
+  131   1      }
+  132          
+  133          //========================================================================
+  134          // 函数名称: void TimerTask()
+  135          // 函数功能: 定时任务，通过定时器0定时10ms来设置相关任务
+  136          // 入口参数: @无
+  137          // 函数返回: 无
+  138          // 当前版本: VER1.0
+  139          // 修改日期: 2023.5.5
+  140          // 当前作者:
+  141          // 其他备注: 
+  142          //========================================================================
+  143          void TimerTask()
+  144          {
+  145   1          u16 delta = 0;
+  146   1          static u16 Time1s = 0;
+  147   1          static u16 CpsTime = 0;
+  148   1          if(Timer0Cnt)
+  149   1          {
+  150   2              delta = Timer0Cnt * 10;
+  151   2              Timer0Cnt = 0;
+  152   2              if(RX1_Cnt>0)
+  153   2              {
+  154   3                  Rx1_Timer += delta;
+  155   3              }
+  156   2              Time1s += delta;
+  157   2              if(Time1s >= 1000)                      //100*10=1000ms
+  158   2              {
+  159   3                  CpsTime += Time1s;
+  160   3                  Time1s = 0;
+  161   3                  SysRunState.isCanReadSensor = 1;
+  162   3      
+  163   3                  PluseCnt = ((u32)LowOverFlowFlag*65536)<<8 | (u32)(T3H*256+T3L) ;
+  164   3                  T3R = 0; 
+  165   3                  T3H = 0;
+  166   3                  T3L = 0;
+  167   3                  T3R = 1;            
+  168   3      
+  169   3                  PlusePortCnt = 0;
+  170   3                  LowOverFlowFlag = 0;
+  171   3              }
+  172   2              
+  173   2              if(CpsTime >= 10000)
+  174   2              {
+  175   3                  CpsTime = 0;
+  176   3                  CPSFlag = 1;
+  177   3              }
+  178   2          }
+  179   1      }
+  180          
+  181          //========================================================================
+  182          // 函数名称: void Rs485Hnd()
+  183          // 函数功能: 通过RS485与上位机握手
+  184          // 入口参数: @无
+  185          // 函数返回: 无
+  186          // 当前版本: VER1.0
+  187          // 修改日期: 2023.5.5
+  188          // 当前作者:
+C251 COMPILER V5.60.0,  main                                                               13/06/23  16:02:14  PAGE 4   
+
+  189          // 其他备注: 
+  190          //========================================================================
+  191          void Rs485Hnd()
+  192          {
+  193   1          if(Rx1_Timer > 20)                  //串口超时20ms
+  194   1          {
+  195   2              Rx1_Timer = 0;
+  196   2              DataPro(RX1_Buffer,RX1_Cnt);
+  197   2              ClearRs485Buf();
+  198   2          }
+  199   1      }
+  200          
+  201          
+  202          void Error()
+  203          {
+  204   1          while(1)
+  205   1          {
+  206   2              
+  207   2              RUN_LED(1);
+  208   2              delay_ms(200);
+  209   2              RUN_LED(0);
+  210   2              delay_ms(200);
+  211   2          }
+  212   1      }
+  213          
+  214          int main(void)
+  215          { 
+  216   1          SysInit();
+  217   1              IoInit();
+  218   1              checkApp();
+  219   1              Timer0_Init();
+  220   1              Timer3_Init();
+  221   1              SensorInit();
+  222   1          Uart1_Init();
+  223   1          ClearRs485Buf();
+  224   1          
+  225   1              delay_ms(1000);    
+  226   1              GetPara(&SysRunState.stParam);
+  227   1          memcpy(SysRunState.stParam.VerSion,VERSION,6);        
+  228   1          MCP4725_OutVol(MCP4725_S1_ADDR,SysRunState.stParam.s_SysParam.yuzhi1);
+  229   1              EA = 1;  
+  230   1          
+  231   1              ClearCounter();
+  232   1              SensorMeasureBegin();                       //开始测量
+  233   1              delay_ms(100);
+  234   1          while(1)
+  235   1          { 
+  236   2              TimerTask();
+  237   2              if(SysRunState.isCanReadSensor == 1)
+  238   2                      {
+  239   3                              SysRunState.isCanReadSensor = 0;
+  240   3                              CaptureSensorPluseCounter();        //捕获当前测量结果
+  241   3                      }        
+  242   2              Rs485Hnd(); 
+  243   2          }
+  244   1      }
+  245          
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =       731     ------
+  ecode size           =    ------     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =    ------     ------
+C251 COMPILER V5.60.0,  main                                                               13/06/23  16:02:14  PAGE 5   
+
+  xdata-const size     =    ------     ------
+  edata size           =       179     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =       195     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

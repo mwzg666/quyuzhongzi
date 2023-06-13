@@ -1,0 +1,153 @@
+C251 COMPILER V5.60.0,  system                                                             13/06/23  16:02:14  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE system
+OBJECT MODULE PLACED IN .\obj\system.obj
+COMPILER INVOKED BY: D:\KeilMDK\C251\BIN\C251.EXE Hardware\System\system.c XSMALL INTR2 OPTIMIZE(0,SPEED) BROWSE INCDIR(
+                    -.\User;.\Hardware\ADC;.\Hardware\CalcCPS;.\Hardware\CalcDoseRate;.\Hardware\Cmd;.\Hardware\DisPlay;.\Hardware\Flash;.\Ha
+                    -rdware\IIC;.\Hardware\Mcp4725;.\Hardware\Sensor;.\Hardware\SPI;.\Hardware\System;.\Hardware\Uart;.\User) PRINT(.\obj\sys
+                    -tem.lst) OBJECT(.\obj\system.obj) 
+
+stmt  level    source
+
+    1          #include "main.h"
+    2          #include "uart.h"
+    3          #include "system.h"
+    4          
+    5          u16  Timer0Cnt = 0;
+    6          u32  PluseCnt = 0;
+    7          u8   LowOverFlowFlag = 0;
+    8          u8   PlusePortCnt = 0;
+    9          
+   10          void SysInit()
+   11          {
+   12   1          HIRCCR = 0x80;           // 启动内部高速IRC
+   13   1          while(!(HIRCCR & 1));
+   14   1          CLKSEL = 0; 
+   15   1      }
+   16          
+   17          
+   18          //========================================================================
+   19          // 函数名称: void Timer0_Init(void)     
+   20          // 函数功能: 在时钟源为11.0592MHz下TIMER0初始化为10ms定时
+   21          // 入口参数: @无
+   22          // 函数返回: 无
+   23          // 当前版本: VER1.0
+   24          // 修改日期: 2023.5.5
+   25          // 当前作者:
+   26          // 其他备注: 
+   27          //========================================================================
+   28          void Timer0_Init(void)          //10毫秒@11.0592MHz
+   29          {
+   30   1              AUXR &= 0x7F;                   //定时器时钟12T模式
+   31   1              TMOD &= 0xF0;                   //设置定时器模式
+   32   1              TL0 = 0x00;                             //设置定时初始值
+   33   1              TH0 = 0xDC;                             //设置定时初始值
+   34   1              TF0 = 0;                                //清除TF0标志
+   35   1              TR0 = 1;                                //定时器0开始计时
+   36   1              ET0 = 1;                                //使能定时器0中断
+   37   1          PT0  = 1;
+   38   1          PT0H = 1;
+   39   1      }
+   40          
+   41          //========================================================================
+   42          // 函数名称: void Timer3_Init(void)
+   43          // 函数功能: TIMER3初始化为下降沿计数模式
+   44          // 入口参数: @无
+   45          // 函数返回: 无
+   46          // 当前版本: VER1.0
+   47          // 修改日期: 2023.5.5
+   48          // 当前作者:
+   49          // 其他备注: 
+   50          //========================================================================
+   51          void Timer3_Init(void)
+   52          {
+   53   1          T3L = 0x00;
+   54   1          T3H = 0x00;
+   55   1          T4T3M  = 0x0c;
+   56   1          IE2 = 0x20;             //Timer3 interrupt enable
+C251 COMPILER V5.60.0,  system                                                             13/06/23  16:02:14  PAGE 2   
+
+   57   1      }
+   58          
+   59          //========================================================================
+   60          // 函数名称: void Timer1_Init(void)     
+   61          // 函数功能: 在时钟源为11.0592MHz下TIMER1初始化为10ms定时
+   62          // 入口参数: @无
+   63          // 函数返回: 无
+   64          // 当前版本: VER1.0
+   65          // 修改日期: 2023.5.5
+   66          // 当前作者:
+   67          // 其他备注: 
+   68          //========================================================================
+   69          void Timer1_Init(void)          //10毫秒@11.0592MHz
+   70          {
+   71   1              AUXR &= 0xBF;                   //定时器时钟12T模式
+   72   1              TMOD &= 0x0F;                   //设置定时器模式
+   73   1              TL1 = 0x00;                             //设置定时初始值
+   74   1              TH1 = 0xDC;                             //设置定时初始值
+   75   1              TF1 = 0;                                //清除TF1标志
+   76   1              TR1 = 1;                                //定时器1开始计时
+   77   1              ET1 = 1;                                //使能定时器1中断
+   78   1      }
+   79           
+   80          //========================================================================
+   81          // 函数名称: u32 GetCounter(void)
+   82          // 函数功能: 获取TIMER3的脉冲计数
+   83          // 入口参数: @无
+   84          // 函数返回: 脉冲计数的值
+   85          // 当前版本: VER1.0
+   86          // 修改日期: 2023.5.5
+   87          // 当前作者:
+   88          // 其他备注: 
+   89          //========================================================================
+   90          u32 GetCounter(void)
+   91          {
+   92   1              u32 Return;
+   93   1              Return = PluseCnt;
+   94   1              PluseCnt = 0;
+   95   1              return Return;
+   96   1      }
+   97          
+   98          void Timer0_Isr (void) interrupt 1   //Timer0中断
+   99          {
+  100   1          Timer0Cnt ++;
+  101   1          PlusePortCnt++;
+  102   1      }
+  103          
+  104          void Timer3_Isr() interrupt 19      //Timer3中断
+  105          {
+  106   1          LowOverFlowFlag++;
+  107   1          
+  108   1          
+  109   1      }
+  110          
+  111          
+  112          
+  113          
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =       191     ------
+  ecode size           =    ------     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =    ------     ------
+C251 COMPILER V5.60.0,  system                                                             13/06/23  16:02:14  PAGE 3   
+
+  xdata-const size     =    ------     ------
+  edata size           =        12     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =        24     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

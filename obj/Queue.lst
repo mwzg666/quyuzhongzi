@@ -1,0 +1,270 @@
+C251 COMPILER V5.60.0,  Queue                                                              24/04/23  09:37:07  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE Queue
+OBJECT MODULE PLACED IN .\obj\Queue.obj
+COMPILER INVOKED BY: D:\KeilMDK\C251\BIN\C251.EXE Hardware\Queue\Queue.c XSMALL INTR2 OPTIMIZE(0,SPEED) BROWSE INCDIR(.\
+                    -User;.\Hardware\ADC;.\Hardware\CalcCPS;.\Hardware\CalcDoseRate;.\Hardware\Cmd;.\Hardware\DisPlay;.\Hardware\Flash;.\Hard
+                    -ware\IIC;.\Hardware\Mcp2510;.\Hardware\Mcp4725;.\Hardware\Queue;.\Hardware\Sensor;.\Hardware\SPI;.\Hardware\System;.\Har
+                    -dware\Uart) PRINT(.\obj\Queue.lst) OBJECT(.\obj\Queue.obj) 
+
+stmt  level    source
+
+    1          #include "main.h"
+    2          //#include <stdio.h>
+    3          #include "stdlib.h"
+    4          //#include <string.h>
+    5          #include "Queue.h"
+    6          
+    7          //置空队
+    8          void InitQueue(squlink Q, unsigned int nSize)
+    9          {
+   10   1          if (!Q)
+   11   1          {
+   12   2              return;
+   13   2          }
+   14   1          
+   15   1          Q->nFront = 0;
+   16   1          Q->nRear = 0;
+   17   1          //队列的最大长度:循环队列，不使用1个元素 
+   18   1          if (nSize > MAX_SQUEUE_SIZE)
+   19   1          {
+   20   2               nSize = MAX_SQUEUE_SIZE ;
+   21   2          }
+   22   1          Q->nSize = nSize+1;
+   23   1      }
+   24          
+   25          //判断队列是否为空 
+   26          int IsEmptyQueue(squlink Q)
+   27          {
+   28   1          int bRet = 0;
+   29   1           
+   30   1          if (!Q)
+   31   1          {
+   32   2              return 1;
+   33   2          }
+   34   1          
+   35   1          if(Q->nFront == Q->nRear)
+   36   1          {
+   37   2              bRet = 1;
+   38   2          }
+   39   1          else
+   40   1          {
+   41   2              bRet = 0;
+   42   2          }
+   43   1          
+   44   1          return bRet;
+   45   1      }
+   46          
+   47          int IsFullQueue(squlink Q)
+   48          {
+   49   1          int bRet = 0;
+   50   1           
+   51   1          if (!Q)
+   52   1          {
+   53   2              return 1;
+   54   2          }
+   55   1          
+   56   1          if(((Q->nRear + 1) % Q->nSize) == Q->nFront)
+C251 COMPILER V5.60.0,  Queue                                                              24/04/23  09:37:07  PAGE 2   
+
+   57   1          {
+   58   2              bRet = 1;
+   59   2          }
+   60   1          else
+   61   1          {
+   62   2              bRet = 0;
+   63   2          }
+   64   1          
+   65   1          return bRet;
+   66   1      }
+   67          
+   68          //进队
+   69          int EnterQueue(squlink Q,DataType e)
+   70          {
+   71   1          if (!Q)
+   72   1          {
+   73   2              return 0;
+   74   2          }
+   75   1          
+   76   1          //队满,则将读指针后移一位
+   77   1          if(((Q->nRear + 1) % Q->nSize) == Q->nFront)
+   78   1          {
+   79   2              Q->nFront = (Q->nFront + 1) % Q->nSize;
+   80   2          }
+   81   1          
+   82   1          Q->cdata[Q->nRear] = e;
+   83   1          Q->nRear = (Q->nRear + 1) % Q->nSize;
+   84   1         
+   85   1          return 1;
+   86   1      }
+   87          
+   88          //出队
+   89          int DeQueue(squlink Q, DataType*  e)
+   90          {
+   91   1          int bRet = 0;
+   92   1          if (!Q)
+   93   1          {
+   94   2              return 0;
+   95   2          }
+   96   1          
+   97   1          
+   98   1          //队空
+   99   1          if(IsEmptyQueue(Q))
+  100   1          {
+  101   2              bRet = 0;
+  102   2          }
+  103   1          else
+  104   1          {
+  105   2              *e = Q->cdata[Q->nFront];
+  106   2              Q->nFront = (Q->nFront+1) % Q->nSize;
+  107   2              bRet = 1;
+  108   2          }
+  109   1          
+  110   1          return bRet;
+  111   1      }
+  112          
+  113          //队Q中当前元素个数
+  114          int Lenqueue(squlink Q)
+  115          {
+  116   1          int i = 0;
+  117   1          if (!Q)
+  118   1          {
+  119   2              return 0;
+  120   2          }
+  121   1          
+  122   1          i = (Q->nRear - Q->nFront + Q->nSize) % Q->nSize;
+C251 COMPILER V5.60.0,  Queue                                                              24/04/23  09:37:07  PAGE 3   
+
+  123   1          
+  124   1          return(i);
+  125   1      }
+  126          
+  127          
+  128          //栈接口
+  129          //退栈
+  130          int DeStack(squlink Q, DataType*  e)
+  131          {
+  132   1          int bRet = 0;
+  133   1          if (!Q)
+  134   1          {
+  135   2              return 0;
+  136   2          }
+  137   1          
+  138   1         
+  139   1          //队空
+  140   1          if(IsEmptyQueue(Q))
+  141   1          {
+  142   2              bRet = 0;
+  143   2          }
+  144   1          else
+  145   1          {
+  146   2              Q->nRear = (Q->nRear - 1 + Q->nSize) % Q->nSize;
+  147   2              *e = Q->cdata[Q->nRear];
+  148   2              bRet = 1;
+  149   2          }
+  150   1          
+  151   1          return bRet;
+  152   1      }
+  153          
+  154          
+  155          // 前N个数总和（不出队）
+  156          DataType SumFront(squlink Q, int nCnt)
+  157          {
+  158   1          DataType nSum = 0;
+  159   1          int i = 0;
+  160   1          if (!Q || Lenqueue(Q) < nCnt)
+  161   1          {
+  162   2              return 0;
+  163   2          }
+  164   1          
+  165   1          for( i =0; i < nCnt; i++)
+  166   1          {
+  167   2              nSum += Q->cdata[((Q->nFront+i) % Q->nSize)];
+  168   2          }
+  169   1          
+  170   1          return nSum;
+  171   1      }
+  172          
+  173          // 后N个数总和（不出队）
+  174          DataType SumRear(squlink Q, int nCnt)
+  175          {
+  176   1          DataType nSum = 0;
+  177   1          int i = 0;
+  178   1          if (!Q || Lenqueue(Q) < nCnt)
+  179   1          {
+  180   2              return 0;
+  181   2          }
+  182   1          
+  183   1          for(i = 0; i < nCnt; i++)
+  184   1          {
+  185   2              nSum += Q->cdata[((Q->nRear - 1 - i + Q->nSize) % Q->nSize)];
+  186   2          }
+  187   1          
+  188   1          return nSum;
+C251 COMPILER V5.60.0,  Queue                                                              24/04/23  09:37:07  PAGE 4   
+
+  189   1      }
+  190          
+  191          
+  192          // 从头读取第N个数据:1,2...n
+  193          DataType GetElement(squlink Q, int nOrder)
+  194          {
+  195   1          DataType nRet = 0;
+  196   1          if (!Q || Lenqueue(Q) <= 0)
+  197   1          {
+  198   2              return 0;
+  199   2          }
+  200   1          
+  201   1          
+  202   1          nRet = Q->cdata[((Q->nFront + nOrder - 1) % Q->nSize)];
+  203   1          return nRet;
+  204   1      }
+  205          //设置队列长度
+  206          void SetQLength(squlink Q, int cnt)
+  207          {
+  208   1              Q->nFront = (Q->nSize + Q->nRear - cnt)% Q->nSize;
+  209   1      }
+  210          
+  211          // 设置
+  212          int SetElement(squlink Q, int nOrder, DataType value)
+  213          {
+  214   1          int index;
+  215   1          if (!Q)
+  216   1          {
+  217   2              return 0;
+  218   2          }
+  219   1          
+  220   1           index= (Q->nFront + nOrder - 1) % Q->nSize;
+  221   1          if (index == Q->nRear)
+  222   1          {
+  223   2            return 0;
+  224   2          }
+  225   1          Q->cdata[index] = value;
+  226   1          return 1;
+  227   1      }
+  228          
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =      1394     ------
+  ecode size           =    ------     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =    ------     ------
+  xdata-const size     =    ------     ------
+  edata size           =       104     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =    ------     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

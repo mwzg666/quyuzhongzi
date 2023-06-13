@@ -1,0 +1,148 @@
+C251 COMPILER V5.60.0,  uart                                                               13/06/23  16:02:14  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE uart
+OBJECT MODULE PLACED IN .\obj\uart.obj
+COMPILER INVOKED BY: D:\KeilMDK\C251\BIN\C251.EXE Hardware\Uart\uart.c XSMALL INTR2 OPTIMIZE(0,SPEED) BROWSE INCDIR(.\Us
+                    -er;.\Hardware\ADC;.\Hardware\CalcCPS;.\Hardware\CalcDoseRate;.\Hardware\Cmd;.\Hardware\DisPlay;.\Hardware\Flash;.\Hardwa
+                    -re\IIC;.\Hardware\Mcp4725;.\Hardware\Sensor;.\Hardware\SPI;.\Hardware\System;.\Hardware\Uart;.\User) PRINT(.\obj\uart.ls
+                    -t) OBJECT(.\obj\uart.obj) 
+
+stmt  level    source
+
+    1          #include "uart.h"
+    2          #include "system.h"
+    3          #include <stdio.h>
+    4          #include <string.h>
+    5          
+    6          u8  TX1_Cnt;            //发送计数
+    7          u8  RX1_Cnt;            //接收计数
+    8          bit B_TX1_Busy;         //发送忙标志
+    9          u16 Rx1_Timer  = 0;
+   10          
+   11          u8  RX1_Buffer[MAX_LENGTH]; //接收缓冲
+   12          
+   13          //========================================================================
+   14          // 函数名称: void Uart1_Init(void)
+   15          // 函数功能: UART0初始化,9600位波特率/秒,8位字符,1位停止位,无校验.
+   16          // 入口参数: @无
+   17          // 函数返回: 无
+   18          // 当前版本: VER1.0
+   19          // 修改日期: 2023.5.5
+   20          // 当前作者:
+   21          // 其他备注: 波特率9600,时钟源选择为ACLK.误码率可能会大些.
+   22          //           用户可选择其他高频时钟源.高频时钟会使波特率的误码率降低.
+   23          //========================================================================
+   24          void Uart1_Init(void)           //9600bps@11.0592MHz
+   25          {  
+   26   1          TR1 = 0;
+   27   1          SCON = 0x50;        //8位数据,可变波特率
+   28   1          AUXR |= 0x40;       //定时器时钟1T模式
+   29   1          AUXR &= 0xFE;       //串口1选择定时器1为波特率发生器
+   30   1          TMOD &= 0x0F;       //设置定时器模式
+   31   1          TL1 = 0xE0;         //设置定时初始值
+   32   1          TH1 = 0xFE;         //设置定时初始值
+   33   1          ET1 = 0;            //禁止定时器中断
+   34   1          TR1 = 1;            //定时器1开始计时
+   35   1          
+   36   1          ES  = 1;            //允许中断
+   37   1          PS  = 0;            //中断高优先级
+   38   1          PSH = 0;
+   39   1          
+   40   1          //UART1 switch to, 0x00: P3.0 P3.1, 0x40: P3.6 P3.7, 
+   41   1          //                 0x80: P1.6 P1.7, 0xC0: P4.3 P4.4
+   42   1          P_SW1 &= 0x3f;
+   43   1          P_SW1 |= 0x40;  
+   44   1          
+   45   1          B_TX1_Busy = 0;
+   46   1          TX1_Cnt = 0;
+   47   1          RX1_Cnt = 0;
+   48   1      }
+   49          
+   50          void UART1_ISR (void) interrupt 4
+   51          {
+   52   1          if(RI)
+   53   1          {
+   54   2              RI = 0;
+   55   2              Rx1_Timer = 0;
+   56   2              RX1_Buffer[RX1_Cnt] = SBUF;
+C251 COMPILER V5.60.0,  uart                                                               13/06/23  16:02:14  PAGE 2   
+
+   57   2              if(++RX1_Cnt >= MAX_LENGTH)   
+   58   2              {
+   59   3                  RX1_Cnt = 0;
+   60   3              }
+   61   2          }
+   62   1      
+   63   1          if(TI)
+   64   1          {
+   65   2              TI = 0;
+   66   2              B_TX1_Busy = 0;
+   67   2          }
+   68   1      }
+   69          
+   70          //重定向Printf
+   71          char putchar(char c )
+   72          {
+   73   1          SBUF = c;
+   74   1          while(!TI);
+   75   1          TI = 0;
+   76   1          return c;
+   77   1      }
+   78          //========================================================================
+   79          // 函数名称: void uart_send(u8 *buf, u8 len)
+   80          // 函数功能: 串口发送函数
+   81          // 入口参数: @*buf：发送的数据；@len：数据长度
+   82          // 函数返回: 无
+   83          // 当前版本: VER1.0
+   84          // 修改日期: 2023.5.5
+   85          // 当前作者:
+   86          // 其他备注: 
+   87          //========================================================================
+   88          
+   89          void uart_send(u8 *buf, u8 len)
+   90          {
+   91   1          u8 i;
+   92   1          Uart485_EN(0);
+   93   1          for (i=0;i<len;i++)     
+   94   1          {
+   95   2              SBUF = buf[i];
+   96   2              B_TX1_Busy = 1;
+   97   2              while(B_TX1_Busy);
+   98   2          }
+   99   1          Uart485_EN(1);
+  100   1      }
+  101          
+  102          void ClearRs485Buf()
+  103          {
+  104   1          memset(RX1_Buffer,0,MAX_LENGTH);
+  105   1          RX1_Cnt = 0;
+  106   1      }
+  107          
+  108          
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =       243     ------
+  ecode size           =    ------     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =    ------     ------
+  xdata-const size     =    ------     ------
+  edata size           =       211     ------
+  bit size             =         1     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+C251 COMPILER V5.60.0,  uart                                                               13/06/23  16:02:14  PAGE 3   
+
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =         6     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
