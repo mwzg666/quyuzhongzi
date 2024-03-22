@@ -257,10 +257,10 @@ void ReadCS()
 void SetCS(u8 *cs)
 {
     float Cocs;
-    Cocs = FloatToSmall(*cs);    
-    memcpy(&SysRunState.stParam.CoCsRate,&Cocs, 4);   
+       
+    memcpy(&Cocs,cs, 4);  
+    SysRunState.stParam.CoCsRate = FloatToSmall(Cocs);    
     SendData('Y',NULL,0);
-	//SaveParam(&SysRunState.stParam);
     SaveParam();
 }  
 
@@ -341,13 +341,11 @@ void ACK_CMD_W(unsigned char *cdata)
     memcpy(SysRunState.stParam.s_SysParam.yuzhi2,wcm.yuzhi2,4);
     memcpy(SysRunState.stParam.s_SysParam.PingHuaShiJian,wcm.PingHuaShiJian,4);
 
-    #ifndef POE_SEN
-    SysRunState.stParam.s_SysParam.Canshu1 = FloatToSmall(wcm.Canshu1);
-    SysRunState.stParam.s_SysParam.Canshu2  = FloatToSmall(wcm.Canshu2);
-	SysRunState.stParam.s_Jiaozhun.DI_C     = SysRunState.stParam.s_SysParam.Canshu1;
-	SysRunState.stParam.s_Jiaozhun.GAO_C    = SysRunState.stParam.s_SysParam.Canshu2;
-    RefreshParam();
-    #endif
+    //#ifndef POE_SEN
+	//SysRunState.stParam.s_Jiaozhun.DI_C     = FloatToSmall(wcm.Canshu1);
+	//SysRunState.stParam.s_Jiaozhun.GAO_C    = FloatToSmall(wcm.Canshu2);
+    //RefreshParam();
+    //#endif
 	
 	MCP4725_OutVol(MCP4725_S1_ADDR,SysRunState.stParam.s_SysParam.yuzhi1);
 	
@@ -428,28 +426,28 @@ void ACK_CMD_J(void)
 //========================================================================
 void ACK_CMD_V(void)
 {
-    STU_DOSERATE dr;
-    
+    STU_DOSERATE dr; 
+    //printf("doserate =%f\r\n",SysRunState.s_DoseMSG.DoseRate);
+  
     dr.DoseRate = FloatToSmall(SysRunState.s_DoseMSG.DoseRate);
     dr.Dose     = FloatToSmall(SysRunState.s_DoseMSG.Dose);
     dr.State    = SysRunState.s_DoseMSG.State;
     dr.PULSE1   = DwordToSmall(SysRunState.s_CPS.CPS1);
     dr.PULSE2   = DwordToSmall(SysRunState.s_CPS.CPS2);
     dr.PULSE3   = 0;
-    
+
     #ifdef POE_SEN
     {
-        dr.DoseRate *= FloatToSmall(SysRunState.stParam.CoCsRate);
+        //dr.DoseRate *= FloatToSmall(SysRunState.stParam.CoCsRate);
     }
     #else
     if ( (SysRunState.s_DoseMSG.DoseRate > 2000) &&
-         (SysRunState.s_DoseMSG.DoseRate < 150000) )
+        (SysRunState.s_DoseMSG.DoseRate < 150000) )
     {
         // Ôö¼ÓCo/Cs±È
         dr.DoseRate *= FloatToSmall(SysRunState.stParam.CoCsRate);
     }
     #endif
-
 	SendData('V',(uint8_t*)&dr,sizeof(STU_DOSERATE));
 }
 

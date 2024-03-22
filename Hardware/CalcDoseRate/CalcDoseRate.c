@@ -291,9 +291,20 @@ float CpsToUsv_h(float count)
     float ret;
 
     #ifdef POE_SEN
-    float c = count;
-    float c2 = c*c;
-    float c3 = c2*c;
+    float c;
+    float c2;
+    float c3;
+    if(CPSFlag)
+    {
+        CPSFlag = 0;
+        if(count >= 1)
+        {
+            count -= 1;
+        }       
+    }
+    c = count;
+    c2 = c*c;
+    c3 = c2*c;
     ret = parama + paramb*c + paramc*c2 + paramd*c3;
     #else
 
@@ -331,9 +342,10 @@ float SmothCpsCalcRate(float RealCPS, float OlduSvh, float *NewuSvh)
     
     if (CPS != -1)
     {
+        //printf("cps = %f\r\n",CPS);
         //*NewuSvh = CpsToUsv_h(CPS);   // uSv/h
-        dr =  CpsToUsv_h(CPS)*0.24;
-        if(dr < 0.15)
+        dr =  CpsToUsv_h(CPS);       
+        if(dr < 0.1)
         {
             *NewuSvh = 0;
         }

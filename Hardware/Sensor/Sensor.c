@@ -123,45 +123,23 @@ void CaptureSensorPluseCounter(void)
 	SysRunState.s_CPS.CPS1 = LowSumCPS;
 	SysRunState.s_CPS.CPS2 = 0;             //LowSumCPS;
 	nSmothCPS = SmothCpsCalcRate(LowSumCPS, SysRunState.s_DoseMSG.DoseRate, &uSvh);
-    
-      
-//	if(uSvh > USE_HIGH_USV)//&&(SysRunState.RealRange == 'L')&&(SysRunState.range =='A'))
-//	{
-//		parama = SysRunState.stParam.s_Jiaozhun.GAO_A;
-//		paramb = SysRunState.stParam.s_Jiaozhun.GAO_B;
-//		paramc = SysRunState.stParam.s_Jiaozhun.GAO_C;
-//        #ifdef POE_SEN
-//        paramd = SysRunState.stParam.s_Jiaozhun.GAO_D;
-//        #endif
-//        ClearCounter();
-//	}
-//	if(uSvh < USE_LOW_USV)//&&(SysRunState.RealRange == 'H')&&(SysRunState.range =='A'))
-//	{
-//		parama = SysRunState.stParam.s_Jiaozhun.DI_A;
-//		paramb = SysRunState.stParam.s_Jiaozhun.DI_B;
-//		paramc = SysRunState.stParam.s_Jiaozhun.DI_C;
-//        #ifdef POE_SEN
-//        UseLowParam(uSvh);
-//        #endif
-//        ClearCounter();
-//	}
+        
+    //printf("doserate1 = %f\r\n",uSvh);
     parama = SysRunState.stParam.s_Jiaozhun.DI_A;
 	paramb = SysRunState.stParam.s_Jiaozhun.DI_B;
 	paramc = SysRunState.stParam.s_Jiaozhun.DI_C;
+    //#ifdef POE_SEN
+    //UseLowParam(uSvh);
+    //#endif
+    //ClearCounter();
+
     #ifdef POE_SEN
     UseLowParam(uSvh);
-    #endif
-    ClearCounter();
-
-
-    #ifdef POE_SEN   
-    UseLowParam(uSvh);
-    SysRunState.s_DoseMSG.DoseRate *= SysRunState.stParam.s_SysParam.Canshu1;
-    //SysRunState.s_DoseMSG.DoseRate *= SysRunState.stParam.s_SysParam.Canshu2;
+    SysRunState.s_DoseMSG.DoseRate  = uSvh;
     #else
 	SysRunState.s_DoseMSG.DoseRate  = uSvh;	
     #endif
-
+    //printf("doserate = %f\r\n",SysRunState.s_DoseMSG.DoseRate);
 	CalcAlarmState(&SysRunState);
 
 	SysRunState.s_DoseMSG.Dose += SysRunState.s_DoseMSG.DoseRate/3600.0f;

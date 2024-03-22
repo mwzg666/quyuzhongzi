@@ -49,7 +49,7 @@ typedef 	unsigned long	u32;
 //定义软件版本号
 #define VERSION "V2.0.0"	                    //最长6个字节
 
-//#define POE_SEN                               // POE探头盖格管   
+#define POE_SEN                               // POE探头盖格管   
 
 #define MIB_CST_DOSERATE_THRESHOLD_ALARM	2	
 #define MIB_CST_DOSERATE_THRESHOLD_WARNING	2
@@ -92,19 +92,23 @@ typedef struct
     float DI_D; 	                //低量程通道校准因子D
 
     // 80 - 1300
-    float MID_A;	                //中量程通道校准因子A		
-	float MID_B;	                //中量程通道校准因子B 	
-	float MID_C;	                //中量程通道校准因子C	
-    float MID_D;	                //中量程通道校准因子D  
+    //float MID_A;	                //中量程通道校准因子A		
+	//float MID_B;	                //中量程通道校准因子B 	
+	//float MID_C;	                //中量程通道校准因子C	
+    //float MID_D;	                //中量程通道校准因子D
+    
+    float SUPER_GAO_A;              // 超高量程通道校准因子A +
+    float SUPER_GAO_B;              // 超高量程通道校准因子B +
+    float SUPER_GAO_C;              // 超高量程通道校准因子C +
     #endif
 	float GAO_A;	                // 高量程通道校准因子A		
 	float GAO_B;	                // 高量程通道校准因子B 
 	float GAO_C;	                // 高量程通道校准因子C 	
-	float SUPER_GAO_A;              // 超高量程通道校准因子A +
-    float SUPER_GAO_B;              // 超高量程通道校准因子B +
-    float SUPER_GAO_C;              // 超高量程通道校准因子C +
+	//float SUPER_GAO_A;              // 超高量程通道校准因子A +
+    //float SUPER_GAO_B;              // 超高量程通道校准因子B +
+    //float SUPER_GAO_C;              // 超高量程通道校准因子C +
 	#ifdef POE_SEN
-    float GAO_D;	                //高量程通道校准因子D
+    //float GAO_D;	                //高量程通道校准因子D
     #endif
     alt_u32 DET_THR_1;              //探测器阈值1
     alt_u32 DET_THR_2;              //探测器阈值2

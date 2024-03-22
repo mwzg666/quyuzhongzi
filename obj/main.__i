@@ -1,0 +1,1 @@
+"User\main.c" XSMALL INTR2 OPTIMIZE (0,SPEED) BROWSE INCDIR(.\User;.\Hardware\ADC;.\Hardware\CalcCPS;.\Hardware\CalcDoseRate;.\Hardware\Cmd;.\Hardware\DisPlay;.\Hardware\Flash;.\Hardware\IIC;.\Hardware\Mcp4725;.\Hardware\Sensor;.\Hardware\SPI;.\Hardware\System;.\Hardware\Uart;.\User) PRINT(.\obj\main.lst) OBJECT(.\obj\main.obj)

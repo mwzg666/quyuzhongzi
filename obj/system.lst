@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  system                                                             13/06/23  16:02:14  PAGE 1   
+C251 COMPILER V5.60.0,  system                                                             18/12/23  18:42:09  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE system
@@ -66,7 +66,7 @@ stmt  level    source
    54   1          T3H = 0x00;
    55   1          T4T3M  = 0x0c;
    56   1          IE2 = 0x20;             //Timer3 interrupt enable
-C251 COMPILER V5.60.0,  system                                                             13/06/23  16:02:14  PAGE 2   
+C251 COMPILER V5.60.0,  system                                                             18/12/23  18:42:09  PAGE 2   
 
    57   1      }
    58          
@@ -135,7 +135,7 @@ Module Information          Static   Overlayable
   idata size           =    ------     ------
   pdata size           =    ------     ------
   xdata size           =    ------     ------
-C251 COMPILER V5.60.0,  system                                                             13/06/23  16:02:14  PAGE 3   
+C251 COMPILER V5.60.0,  system                                                             18/12/23  18:42:09  PAGE 3   
 
   xdata-const size     =    ------     ------
   edata size           =        12     ------
